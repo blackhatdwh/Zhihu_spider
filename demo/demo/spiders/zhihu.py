@@ -12,17 +12,22 @@ class ZhihuSpider(scrapy.Spider):
 
     def start_requests(self):
         people_id = ['excited-vczh', 'sizhuren']
+        person_id = ['zhang-jia-wei', 'feifeimao', 'zhu-xuan-86', 'ze.ran', 'yolfilm', 'sizhuren', 'tang-que', 'vczh', 'yixiao-feng-yun-guo', 'douzishushu']
         requests = []
         for p in people_id:
             requests.append(scrapy.Request(url='https://www.zhihu.com/people/%s/activities' % p, callback = self.parse_activities))
+            '''
             for i in range(1, 6):
                 requests.append(scrapy.Request(url='https://www.zhihu.com/people/%s/following?page=%s' %(p, i), callback = self.parse_following))
             for i in range(1, 6):
                 requests.append(scrapy.Request(url='https://www.zhihu.com/people/%s/followers?page=%s' %(p, i), callback = self.parse_followers))
+            '''
             for i in range(1, 26):
                 requests.append(scrapy.Request(url='https://www.zhihu.com/people/%s/answers?page=%s' %(p, i), callback = self.parse_answers))
+            '''
             for i in range(1, 26):
                 requests.append(scrapy.Request(url='https://www.zhihu.com/people/%s/posts?page=%s' %(p, i), callback = self.parse_posts))
+            '''
         return requests
 
     def parse_activities(self, response):
@@ -145,7 +150,7 @@ class ZhihuSpider(scrapy.Spider):
             item['upvote_num'] = 0
             try:
                 #print(response.css('div.List-item div.AnswerItem')[i].css('div.ContentItem-meta div.AnswerItem-meta div.AnswerItem-extraInfo span.Voters button::text').extract()[0])
-                item['upvote_num'] = response.css('div.List-item div.AnswerItem')[i].css('div.ContentItem-meta div.AnswerItem-meta div.AnswerItem-extraInfo span.Voters button::text').extract()[0].replace("'", '"')
+                item['upvote_num'] = response.css('div.List-item div.AnswerItem')[i].css('div.ContentItem-meta div.AnswerItem-extraInfo span.Voters button::text').extract()[0].replace("'", '"')
             except IndexError: pass
 
             #comment
