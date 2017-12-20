@@ -9,7 +9,18 @@ from scrapy import signals
 from scrapy.http import HtmlResponse
 from scrapy.utils.python import to_bytes
 from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 import time
+
+def is_article_loaded(div):
+    try:
+        div.find_element_by_css_selector('div.RichContent div.ContentItem-time a span')
+        return True
+    except NoSuchElementException:
+        return False
 
 class PhantomJSMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
@@ -17,6 +28,7 @@ class PhantomJSMiddleware(object):
     # passed objects.
 
     @classmethod
+
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
         middleware = cls()
@@ -65,13 +77,23 @@ class PhantomJSMiddleware(object):
     def process_request(self, request, spider):
         request.meta['driver'] = self.driver
         self.driver.get(request.url)
-        time.sleep(1)
         if request.url.split('/')[-1] == 'activities':
-            self.driver.find_element_by_xpath('//*[@id="ProfileHeader"]/div/div[2]/div/div[2]/div[3]/button').click()
-            #self.driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
-        if request.url.split('/')[-1].split('?')[0] == 'answers':
-            for b in self.driver.find_elements_by_css_selector('button.ContentItem-more'):
-                b.click()
-                time.sleep(0.5)
+            WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.XPATH, "//button[contains(@class, 'ProfileHeader-expandButton')]"))
+            )
+            self.driver.find_element_by_xpath('//button[contains(@class, "ProfileHeader-expandButton")]').click()
+        if request.url.split('/')[-1].split('?')[0] == 'answers' or request.url.split('/')[-1].split('?')[0] == 'posts':
+            WebDriverWait(self.driver, 10).until(
+                    EC.invisibility_of_element_located((By.XPATH, "//div[contains(@class, 'PlaceHolder')]"))
+            )
+            for div in self.driver.find_elements_by_css_selector('div.List-item div.ContentItem'):
+                div.find_element_by_css_selector('div.RichContent div.RichContent-inner button').click()
+                WebDriverWait(self.driver, 10).until(
+                        lambda x: div.find_element_by_css_selector('div.RichContent div.ContentItem-time')
+                )
+
+        if request.url.split('/')[2] == 'zhuanlan.zhihu.com':
+            pass
+
         body = to_bytes(self.driver.page_source)
         return HtmlResponse(self.driver.current_url, body=body, encoding='utf-8', request=request)
