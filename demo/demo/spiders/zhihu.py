@@ -113,6 +113,14 @@ class ZhihuSpider(scrapy.Spider):
     def parse_answers(self, response):
         person_id = response.url.split('/')[4].replace("'", '"')
         items = []
+
+        time_arr = response.css('div.ContentItem-time a').xpath('.//text()').extract()
+        for i in range(len(time_arr)):
+            try:
+                if time_arr[i][0] == '编':
+                    time_arr[i] += time_arr[i+1]
+                    time_arr.pop(i+1)
+            except IndexError: break
         for i in range(20):
             item = AnswersItem()
             item['author_id'] = person_id
@@ -131,7 +139,7 @@ class ZhihuSpider(scrapy.Spider):
 
             #time
             #print(response.css('div.ContentItem-time a span::text')[2*i+1].extract())
-            item['answer_time'] = response.css('div.ContentItem-time a span::text')[2*i+1].extract().replace("'", '"')
+            item['answer_time'] = time_arr[i]
 
             #upvote
             item['upvote_num'] = 0
